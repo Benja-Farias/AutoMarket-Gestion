@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoMarket | Gestión administrativa</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <section class="login-screen" id="loginScreen">
+    <form class="login-card" id="loginForm">
+      <div class="eyebrow">AUTOMARKET · ADMINISTRACIÓN</div>
+      <h1>Ingresar al sistema</h1>
+      <p>Utiliza la cuenta de administrador de AutoMarket.</p>
+      <label for="loginEmail">Correo electrónico</label>
+      <input id="loginEmail" name="correo" type="email" autocomplete="username" required>
+      <label for="loginPassword">Contraseña</label>
+      <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+      <button class="primary full" type="submit" id="loginButton">Iniciar sesión</button>
+      <p class="form-error" id="loginError" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="adminApp" hidden>
+    <aside class="sidebar">
+      <div class="logo">AUTOMARKET</div>
+      <div class="menu-title">ADMINISTRACIÓN</div>
+      <button type="button" class="nav active" id="vehiclesTab">▦ &nbsp; Vehículos</button>
+      <button type="button" class="nav" id="customersTab">◈ &nbsp; Clientes</button>
+      <div class="foot">
+        <div id="adminUser"></div>
+        <button type="button" class="secondary logout" id="logoutButton">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow" id="eyebrow">PANEL DE GESTIÓN / VEHÍCULOS</div>
+          <h1 id="pageTitle">Inventario de vehículos</h1>
+        </div>
+        <div class="status" id="connection">● Conectado a Spring Boot</div>
+      </header>
+
+      <section class="stats" id="vehicleStats">
+        <div class="stat"><span>Total de vehículos</span><strong id="total">—</strong><small>En MongoDB</small></div>
+        <div class="stat"><span>Disponibles</span><strong id="disponibles">—</strong><small>Inventario activo</small></div>
+        <div class="stat"><span>Reservados</span><strong id="reservados">—</strong><small>Fuera de oferta</small></div>
+        <div class="stat"><span>Vendidos</span><strong id="vendidos">—</strong><small>Historial</small></div>
+      </section>
+
+      <section class="stats" id="customerStats" hidden>
+        <div class="stat"><span>Total de clientes</span><strong id="totalCustomers">—</strong><small>Registros comerciales</small></div>
+      </section>
+
+      <section class="panel" id="vehiclesSection">
+        <div class="panel-head">
+          <div><h2>Catálogo</h2><p>Buscar, registrar, editar y eliminar vehículos</p></div>
+          <button class="primary" type="button" id="newVehicle">+ Nuevo vehículo</button>
+        </div>
+        <div class="filters">
+          <input id="vehicleSearch" placeholder="Buscar marca, modelo o VIN" aria-label="Buscar vehículo">
+          <select id="vehicleState" aria-label="Filtrar estado">
+            <option value="">Todos los estados</option>
+            <option value="DISPONIBLE">DISPONIBLE</option>
+            <option value="RESERVADO">RESERVADO</option>
+            <option value="VENDIDO">VENDIDO</option>
+          </select>
+          <button class="secondary" type="button" id="refreshVehicles">Actualizar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>VEHÍCULO</th><th>VIN</th><th>SUCURSAL</th><th>PRECIO</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+            <tbody id="vehicleRows"><tr><td colspan="6">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="vehicleCount"></div>
+      </section>
+
+      <section class="panel" id="customersSection" hidden>
+        <div class="panel-head">
+          <div><h2>Clientes</h2><p>Gestión de clientes comerciales; no modifica cuentas de login</p></div>
+          <button class="primary" type="button" id="newCustomer">+ Nuevo cliente</button>
+        </div>
+        <div class="filters">
+          <input id="customerSearch" placeholder="Buscar nombre, ID o correo" aria-label="Buscar cliente">
+          <button class="secondary" type="button" id="refreshCustomers">Actualizar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>CLIENTE</th><th>ID / RUT</th><th>CORREO</th><th>TELÉFONO</th><th>ACCIONES</th></tr></thead>
+            <tbody id="customerRows"><tr><td colspan="5">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="customerCount"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="overlay" id="vehicleOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="vehicleModalTitle">
+      <div class="modal-top">
+        <div><span class="eyebrow" id="vehicleFormType">CREATE</span><h2 id="vehicleModalTitle">Nuevo vehículo</h2></div>
+        <button class="icon" type="button" id="closeVehicle" aria-label="Cerrar">×</button>
+      </div>
+      <form id="vehicleForm">
+        <div class="fields">
+          <label>VIN (opcional, 17 caracteres)<input name="vin" maxlength="17" pattern="[A-Za-z0-9]{17}"></label>
+          <label>Marca<input name="marca" required maxlength="50"></label>
+          <label>Modelo<input name="modelo" required maxlength="50"></label>
+          <label>Año<input name="anio" type="number" min="1900" max="2100" required></label>
+          <label>Precio CLP<input name="precio" type="number" min="1" step="1" required></label>
+          <label>Kilometraje<input name="km" type="number" min="0" step="1" required></label>
+          <label>Color<input name="color" maxlength="60"></label>
+          <label>Sucursal (ID)<input name="idSucursal" type="number" min="1"></label>
+          <label>Condición<select name="estado"><option>Nuevo</option><option>Usado</option></select></label>
+          <label>Estado de inventario<select name="estadoInventario"><option>DISPONIBLE</option><option>RESERVADO</option><option>VENDIDO</option></select></label>
+          <label>Tipo<select name="tipoVehiculo"><option value="">Sin especificar</option><option>SEDAN</option><option>SUV</option><option>PICKUP</option><option>HATCHBACK</option><option>CAMIONETA</option></select></label>
+          <label>Transmisión<input name="transmision" required value="Automático"></label>
+          <label>Combustible<input name="combustible" required value="Bencina"></label>
+          <label>Imagen del catálogo<select name="imagen"><option>auto1</option><option>auto2</option><option>auto3</option></select></label>
+          <label class="check-field"><input name="destacado" type="checkbox"> Destacado en catálogo</label>
+        </div>
+        <div class="actions">
+          <button class="secondary" type="button" id="cancelVehicle">Cancelar</button>
+          <button class="primary" type="submit" id="saveVehicle">Guardar vehículo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="customerOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+      <div class="modal-top">
+        <div><span class="eyebrow" id="customerFormType">CREATE</span><h2 id="customerModalTitle">Nuevo cliente</h2></div>
+        <button class="icon" type="button" id="closeCustomer" aria-label="Cerrar">×</button>
+      </div>
+      <form id="customerForm">
+        <div class="fields">
+          <label>ID cliente / RUT<input name="idCliente" required maxlength="20"></label>
+          <label>Nombre<input name="nombre" required maxlength="100"></label>
+          <label>Apellido<input name="apellido" required maxlength="100"></label>
+          <label>Correo<input name="correoElectronico" type="email" required maxlength="180"></label>
+          <label>Teléfono<input name="telefono" required maxlength="30"></label>
+          <label>Dirección<input name="direccion" required maxlength="250"></label>
+        </div>
+        <div class="actions">
+          <button class="secondary" type="button" id="cancelCustomer">Cancelar</button>
+          <button class="primary" type="submit" id="saveCustomer">Guardar cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
