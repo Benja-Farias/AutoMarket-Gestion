@@ -1,8 +1,5 @@
 'use strict';
 
-// Panel independiente basado en el CRUD de Taller de Base de Datos.
-// Solo utiliza la API REST de Spring Boot existente: nunca conecta MongoDB directamente.
-
 const $ = (id) => document.getElementById(id);
 const money = (value) => new Intl.NumberFormat('es-CL', {
   style: 'currency',
@@ -144,13 +141,25 @@ async function login(event) {
 }
 
 async function restoreSession() {
+  try {
+    const auth = await request('/auth/refresh', { method: 'POST' }, false);
+    if (auth.user?.rol !== 'ADMIN') {
+      showLogin('Acceso reservado a administradores.');
+      return;
+    }
+    saveToken(auth.accessToken);
+    showAdmin(auth.user);
+    return;
+  } catch {
+    // login independiente para acceder directamente al panel.
+  }
+
   if (!state.token) {
     showLogin();
     return;
   }
-
   try {
-    const user = await request('/auth/me');
+    const user = await request('/auth/me', {}, false);
     if (user.rol !== 'ADMIN') {
       showLogin('Se requiere una cuenta de administrador.');
       return;
@@ -163,6 +172,7 @@ async function restoreSession() {
 
 async function logout() {
   await request('/auth/logout', { method: 'POST' }).catch(() => {});
+  localStorage.setItem('automarket:logout-event', String(Date.now()));
   showLogin();
 }
 
