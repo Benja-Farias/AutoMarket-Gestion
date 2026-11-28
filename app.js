@@ -151,7 +151,6 @@ async function restoreSession() {
     showAdmin(auth.user);
     return;
   } catch {
-    // login independiente para acceder directamente al panel.
   }
 
   if (!state.token) {
